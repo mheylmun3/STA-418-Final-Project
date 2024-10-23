@@ -1,0 +1,6 @@
+This was my final project for my Statistical Computing and Graphics with R class at GVSU. I felt that this should be included as part of my portfolio for three reasons. The reasons are that this was a graduate level class that I was taking as an underclassmen, it was suggested to work in groups of three, yet I worked alone, and the professor messaged me saying that he thought it was the best project of both class sections (about 50 people).
+
+Introduction:
+The stereotypical "American Dream" has always included owning property and your own house, but this ideal is becoming increasingly out of reach for the average American. The next generation of home buyers are having a difficult time purchasing property due to the high home prices, high rates of rent, and commercialized real estate. As a prospective home buyer within the next 5 to 10 years, I wanted to look into the trends of these soaring home prices and what demographics of people are being impacted by this hike in prices the most.
+
+No data file is needed, as it is pulled from a remote repository. The other files are used as assets for markdown file when it is knitted. The only thing you have to do is download all files and knit to readthedown.
