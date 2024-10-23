@@ -1,0 +1,80 @@
+#content {
+  max-width: 1920px; /* Fills the size of the screen */
+}
+
+#main .nav-pills > li.active > a,
+#main .nav-pills > li.active > a:hover,
+#main .nav-pills > li.active > a:focus {
+  background-color: #003366; /* Dark Blue */
+}
+
+#main .nav-pills > li > a:hover {
+  background-color: #003366; /* Dark Blue */
+}
+
+#nav-top span.glyphicon {
+  color: #003366; /* Dark Blue */
+}
+
+#table-of-contents header {
+  color: #003366; /* Dark Blue */
+}
+
+#table-of-contents h2 {
+  background-color: #5A7B9C; /* Medium Blue-Gray */
+}
+
+#main a {
+  background-image: linear-gradient(180deg, #5A7B9C, #5A7B9C); /* Medium Blue-Gray */
+  color: #fff; /* White */
+}
+
+a:hover {
+  color: #666; /* Medium Gray */
+}
+
+a:visited {
+  color: #666; /* Medium Gray */
+}
+
+.title {
+  text-align: center;
+  color: white;
+  background-image: url('../Houses.png');
+  height: 310px;
+  background-position-x: -40px;
+}
+
+#sidebar {
+  background-image: url('../woodBackground.jpg');
+}
+
+#postamble {
+  background: #003366; /* Dark Blue */
+  border-top: solid 10px #666;
+  z-index: 1;
+}
+
+.subtitle {
+  color: #003366; /* Dark Blue */
+}
+
+h3, h4, h5, h6, legend {
+  color: #333; /* Dark Gray */
+}
+
+#content h1 {
+  background-color: #003366; /* Dark Blue */
+  color: ghostwhite
+}
+
+/* Make all images (including graphs) larger */
+#figure {
+  max-width: 800px; /* Ensure images don't exceed their natural size */
+  height: auto; /* Maintain the aspect ratio */
+}
+
+#content h2 {
+    background-color: #003366;
+    color: ghostwhite;
+}

@@ -1,0 +1,703 @@
+---
+title: "Final Project: The United States Census"
+author: "Michael Heylmun"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    css: "assets/custom.css"
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+The stereotypical American dream has always included owning property and your own house, but this ideal is becoming increasingly out of reach for the average American. This next generation of home buyers are having a difficult time purchasing property due to the high home prices, high rates of rent, and commercialized real estate. As a prospective home buyer within the next 5 to 10 years, I wanted to look into the trends of these soaring home prices and what demographics of people are being impacted by this hike in prices the most.
+
+# Data Dictionary
+
+### Loading Libraries
+
+```{r, results="hide", warning=FALSE, message=FALSE}
+# Loading all of the libraries while hiding any extra output
+library(tidyverse)
+library(lubridate)
+library(knitr)
+library(skimr)
+library(scales)
+library(ggplot2)
+library(gapminder)
+library(arrow)
+library(ggthemes)
+library(rmdformats)
+library(stringr)
+library(flextable)
+library(tidytext)
+library(wordcloud2)
+library(gtrendsR)
+library(patchwork)
+```
+
+```{r, echo=FALSE}
+# Code for currency conversions for later use
+label_currency <- function(x) {
+  scales::dollar(x, accuracy = 0.01, prefix = "$", suffix = "")
+}
+```
+
+
+### Importing the Data Set
+
+```{r}
+filePath <- "https://raw.githubusercontent.com/dilernia/STA418-518/main/Data/census_data_state_2008-2021.csv" # Storing the filepath
+
+census_data <- read_csv(filePath) # Reading in the file and storing it in census_data
+```
+
+### Skimming the Data
+
+```{r, warning=FALSE}
+glimpse(census_data) # Using the glimpse function to quickly view the data
+skim(census_data) # Using the skim function to skim through the data and look for missing values and outliers in the histograms
+```
+
+### Data Set Variable Types
+
+The variables within the data set are of two variable types, character and numeric of type double.
+
+The two character variables are:
+
+* geoid: Geographic region ID
+
+* county_state: Geographic region
+
+The twenty-four double variables in this data set are:
+
+* year: The year
+
+* Population: The population
+
+* median_income: Median income in dollars
+
+* median_monthly_rent_cost: Median monthly rent costs for renters in dollars
+
+* median_monthly_home_cost: Median monthly housing costs for homeowners in dollars
+
+* prop_female: Proportion of people who are female
+
+* prop_male: Proportion of people who are male
+
+* prop_white: Proportion of people who are white alone
+
+* prop_black: Proportion of people who are black or African American alone
+
+* prop_native: Proportion of people who are American Indian and Alaska Native alone
+
+* prop_asian: Proportion of people who are Asian alone
+
+* prop_hawaiin_islander: Proportion of people who are Natice Hawaiian and Other Pacific Islander alone
+
+* prop_other_race: Proportion of people who are some other race alone
+
+* prop_multi_racial: Proportion of people are two or more races
+
+* prop_highschool: Proportion of people 25 and older whose highest education-level is high school
+
+* prop_GED: Proportion of people 25 and older whose highest education-level is a GED
+
+* prop_some_college: Proportion of people 25 and older whose highest education-level is some, but less than 1 year of college
+
+* prop_college_no_degree: Proportion of people 25 and older whose highest education-level is greater than 1 year of college but no degree
+
+* prop_associates: Proportion of people 25 and older whose highest education-level is an Associates degree
+
+* prop_bachelors: Proportion of people 25 and older whose highest education-level is a Bachelors degree
+
+* prop_masters: Proportion of people 25 and older whose highest education-level is a Masters degree
+
+* prop_professional: Proportion of people 25 and older whose highest education-level is a Professional degree
+
+* prop_doctoral: Proportion of people 25 and older whose highest education-level is a Doctoral degree
+
+* prop_poverty: Proportion of people 25 and older living in poverty, defined by the Census Bureau as having an income below the poverty threshold for their family size
+
+These 26 variables can also be broken up by categories and subcategories. The two categories are non-proportional and proportional.
+
+1. __Non-proportional__:
+
+    * __Demographics/Characteristics__: geoid, county_state, year, population, and median_income
+
+2. __Proportional__:
+
+    * __Gender__: prop_female and prop_male
+  
+    * __Race__: prop_white, prop_black, prop_native, prop_asian, prop_hawaiin_islander, prop_other_race, and prop_multi_racial
+  
+    * __Education__: prop_highschool, prop_GED, prop_some_college, prop_college_no_degree, prop_associates, prop_bachelors, prop_masters, prop_professional, and prop_doctoral
+  
+    * __Poverty__: prop_poverty
+
+### Missing Values
+
+After analyzing the raw data using the `skim()` and `glimpse()` functions, there are no missing data values for any of the variables.
+
+This is very important to check, as it can heavily skew or misrepresent the sample or population, if extrapolated.
+
+### Creating Tables Summarizing the Data
+
+Comparing median income from the years 2008 through 2021.
+
+```{r}
+income_table <- census_data %>% 
+  group_by(year) %>% 
+  skim() %>% 
+  dplyr::filter(skim_variable == "median_income") # Grouping by year, filtering by "median_income" and storing it in the variable income_table
+
+print(income_table) # Printing the table
+```
+
+The table shows that the median income dipped slightly in 2009 and 2010, likely from the housing market crash, and then grew steadily through 2021.
+
+## Creating a Data Dictionary
+
+```{r}
+# Data Dictionary
+dataDictionary <- tibble(Variable = colnames(census_data), # Creating a tibble of the variable descriptions and storing it in dataDictionary
+                         Description = c(
+                           "Geographic Region ID", 
+                           "Geographic Region", 
+                           "Year (2008-2021)", 
+                           "Population", 
+                           "Median Income (Dollars)", 
+                           "Median Monthly Rent Costs for Renters (Dollars)", 
+                           "Median Monthly Housing Costs for Homeowners (Dollars)", 
+                           "Proportion of People who are Female", 
+                           "Proportion of People who are Male", 
+                           "Proportion of People who are White Alone", 
+                           "Proportion of People who are Black or African American Alone", 
+                           "Proportion of People who are American Indian and Alaska Native Alone", 
+                           "Proportion of People who are Asian Alone", 
+                           "Proportion of People who are Native Hawaiian and Other Pacific Islander Alone", 
+                           "Proportion of People who are Some Other Race Alone", 
+                           "Proportion of People who are Two or More Races", 
+                           "Proportion of People 25 and Older Whose Highest Education Level is High School", 
+                           "Proportion of People 25 and Older Whose Highest Education Level is a GED", 
+                           "Proportion of People 25 and Older Whose Highest Education Level is Some, but less than 1 Year of College", 
+                           "Proportion of People 25 and Older Whose Highest Education Level is Greater than 1 Year of College but no Degree", 
+                           "Proportion of People 25 and Older Whose Highest Education Level is an Associates Degree", 
+                           "Proportion of People 25 and Older Whose Highest Education Level is a Bachelor's Degree", 
+                           "Proportion of People 25 and Older Whose Highest Education Level is a Masters Degree", 
+                           "Proportion of People 25 and Older Whose Highest Education Level is a Professional Degree", 
+                           "Proportion of People 25 and Older Whose Highest Education Level is a Doctoral Degree", 
+                           "Proportion of People 25 and Older Living in Poverty"
+                         ),
+                         Type = map_chr(census_data, .f = function(x){typeof(x)[1]}), # Creating a character vector of the types of each variable
+                         Class = map_chr(census_data, .f = function(x){class(x)[1]})) # Creating a character vector of the classes of each variable
+```
+
+### Displaying the Data Dictionary
+
+```{r}
+# Printing nicely in R Markdown (option 1)
+flextable::flextable(dataDictionary, cwidth = 2) # Printing the dataDictionary table using the flextable R package
+```
+
+# Data Cleaning
+
+To make the data ready for transformations and visualizations, the data must be first cleaned and organized. This will be achieved by merging data sets and string manipulation.
+
+## Merging Data Sets
+
+### Sorting States by Region
+
+This function takes a list of every state, categorized by region, and matches each state in the data set with its respective region. This was made to be used later to be able to analyze data based on geographical region.
+
+```{r}
+# Creating the region variable
+# Used chatGPT to help list all states with their respective regions
+census_data <- census_data %>%
+  mutate(
+    region = case_when(
+      str_detect(county_state, "California|Oregon|Washington|Alaska|Hawaii|Arizona|Colorado|Idaho|Montana|Nevada|New Mexico|Utah|Wyoming") ~ "West", # Detecting West regional states
+      str_detect(county_state, "North Dakota|South Dakota|Nebraska|Kansas|Minnesota|Iowa|Missouri|Wisconsin|Illinois|Michigan|Indiana|Ohio") ~ "Midwest", # Detecting Midwest regional states
+      str_detect(county_state, "Texas|Oklahoma|Arkansas|Louisiana|Mississippi|Alabama|Florida|Georgia|South Carolina|North Carolina|Tennessee|Kentucky|Virginia|West Virginia|Maryland|Delaware|District of Columbia|Puerto Rico") ~ "South", # Detecting Southern regional states
+      str_detect(county_state, "Maine|New Hampshire|Vermont|Massachusetts|Rhode Island|Connecticut|New York|New Jersey|Pennsylvania") ~ "Northeast", # Detecting Northeast regional states
+      TRUE ~ NA_character_
+    )
+  )
+
+# Creating summary table
+regions <- census_data %>%
+  group_by(region) %>%
+  summarize(Unique_States = n_distinct(county_state), .groups = "drop")
+
+# Display the summary table
+flextable::flextable(regions)
+```
+
+This table shows the number of states that were identified in each region. Only the unique states are included so that each state listed for each year is not included.
+
+## String Manipulation
+
+```{r}
+# State Abbreviations
+census_data <- census_data %>%
+  mutate(
+    # Extract State Abbreviation
+    state_abbreviation = str_extract(county_state, "[A-Za-z]{2}"), # Used chatGPT for code to find state abbreviations
+    # Capitalize State Name
+    capitalized_state_name = str_to_title(county_state),
+    # Combine Abbreviation and Capitalized Name
+    abbreviations = str_c(capitalized_state_name, "(", state_abbreviation, ")")
+  )
+
+# Creating a data table
+table_data <- slice_head(select(census_data, county_state, abbreviations), n = 8) # Showing the first 8 states in the table
+
+# Printing the table
+flextable(table_data)
+```
+
+
+# Exploratory Data Analysis
+
+This section consists of data transformations to display the data.
+
+## Tables of Summary Statistics
+
+This sections displays tables with statistics that summarize the data.
+
+### Percentage of Each Race by Region
+
+This table displays the average percentage of each race within each region. The low percentage races were lumped together into the `Average_Other` variable.
+
+```{r}
+# Creating the combined_other_race variable
+census_data <- census_data %>% 
+  mutate(
+    combined_other_race = prop_hawaiin_islander + prop_other_race + prop_multi_racial
+  )
+
+# Calculating the average total percentage of race by region
+raceByRegion <- census_data %>%
+  group_by(region) %>%
+  summarize(
+    Average_White = mean(prop_white),
+    Average_Black = mean(prop_black),
+    Average_Native = mean(prop_native),
+    Average_Asian = mean(prop_asian),
+    Average_Other = mean(combined_other_race),
+    .groups = "drop"
+  )
+
+# Display the table
+flextable::flextable(raceByRegion)
+```
+
+### Finding the median income after home or rent expenses.
+
+This table finds how much money the average American had in income each year after home expenses, broken up by mortgage expenses and rent expenses.
+
+```{r}
+# Creating the expenses variable
+expenses <- census_data %>% 
+  group_by(year) %>%
+  summarize(
+    income_after_home_expenses = label_currency(mean((median_income - (12 * (median_monthly_home_cost))))), # Calculates the average median anual income after home costs
+    income_after_rent_expenses = label_currency(mean((median_income - (12 * (median_monthly_rent_cost))))) # Calculates the average median anual income after rent costs
+    )
+# Having the year displayed without commas
+expenses$year <- as.character(expenses$year)
+
+# Displaying the table
+flextable::flextable(expenses, cwidth = 2.5)
+```
+
+### Obataining a Frequency Table
+
+The overall average percentage of people in poverty was 14.5%. This table compares male vs. female dominated states and having a poverty percentage of greater than 14.5%
+
+```{r}
+# Used chatgpt to help with ifelse statements
+# Creating the freq_table variable
+freq_table <- census_data %>%
+  mutate(Gender_Group = ifelse(prop_female > 0.5, "Female", "Male"), # Finds female or male dominated states
+         Poverty_Group = ifelse(prop_poverty > 0.145, "High Poverty", "Low Poverty")) %>% # Finds if they are above or below the national average poverty percentage
+  group_by(Gender_Group, Poverty_Group) %>%
+  summarize(Frequency = n(), 
+            .groups = "drop")
+
+# Displaying the frequency table using flextable
+flextable::flextable(freq_table, cwidth = 1.5)
+
+```
+
+This table shows that most states are predominantly female, but about half of them are below the national poverty percent average. Male dominated states seem to have a much lower poverty rate.
+
+## Data Visualizations
+
+This sections displays graphical figures that summarize the data.
+
+### Plotting Median Monthly Housing Costs Over the Years in the US
+
+Plotting monthly home and rent expenses over from the years 2008 through 2021.
+
+```{r}
+# Creating the variable avg_costs
+avg_costs <- census_data %>%
+  pivot_longer(cols = c(median_monthly_home_cost, median_monthly_rent_cost), # Used chatgpt to help combine these two plot together
+               names_to = "cost_type", 
+               values_to = "value") %>%
+  group_by(year, cost_type) %>%
+  summarize(avg_value = mean(value), 
+            .groups = "drop")
+
+# Creating the variable housingLineChart to plot home and rent expenses
+housingLineChart <- avg_costs %>%
+  ggplot(aes(x = year, 
+             y = avg_value, 
+             color = cost_type, 
+             group = cost_type)) +
+  geom_line(linewidth = 1) +
+  labs(title = "Median Monthly Housing Costs Over the Years in the US",
+       x = "Year",
+       y = "Average Median Monthly Cost",
+       caption = "Data source: census_data_state_2008-2021.csv") +
+  scale_color_colorblind() + 
+  theme_bw() + 
+  theme(legend.position = "bottom") + 
+  scale_y_continuous(labels = scales::dollar_format(prefix = "$")) # Formats the y-axis to use a currency format
+
+# Displays the graph
+housingLineChart
+```
+
+This graph shows that it used to be much cheaper in the US to rent property rather than own it. In 2021, the prices became increasingly comparable.
+
+### Percentage of Degree Holders Over the Years in the US
+
+This graph displays the percentage of the population that had some kind of college degree vs. the percentage of the population with no degree over the years.
+
+```{r}
+# Creating the combined_degree_holders variable combining the percentages of all degree holding Americans
+census_data <- census_data %>%
+  mutate(
+    combined_degree_holders = prop_associates + prop_bachelors + prop_masters + prop_professional + prop_doctoral
+  )
+
+# Creating the combined_non_degree_holders variable combining the percentages of all non-degree holding Americans
+census_data <- census_data %>%
+  mutate(
+    combined_non_degree_holders = prop_highschool + prop_GED + prop_some_college + prop_college_no_degree
+  )
+
+# Combining degree holders and non-degree holders
+long_data <- census_data %>%
+  select(year, combined_degree_holders, combined_non_degree_holders) %>%
+  pivot_longer(cols = c(combined_degree_holders, combined_non_degree_holders),
+               names_to = "Education_Level",
+               values_to = "Percentage") %>%
+  group_by(year, Education_Level) %>%
+  summarize(avg_perc = mean(Percentage), 
+            .groups = "drop")
+
+# Plotting the data
+degreeLineChart <- ggplot(long_data, aes(x = year, 
+                                           y = avg_perc, 
+                                           color = `Education_Level`, 
+                                           group = `Education_Level`)) +
+  geom_line(linewidth = 1) +
+  labs(title = "Education Level Over the Years in the US",
+       x = "Year",
+       y = "Combined Percentage",
+       caption = "Data source: census_data_state_2008-2021.csv") +
+  scale_color_colorblind() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Plotting the graph
+degreeLineChart
+```
+
+This graph shows that the percentage of degree holders in the US has almost surpassed the percentage of non-degree holders since 2008, starting with nearly a 20% difference in percentage.
+
+### Median Income by Region Over the Years in the US
+
+This plot displays the median income by region in the US between the years 2008 and 2021.
+
+```{r}
+# Calculate average median income per year and region
+average_income_per_year <- census_data %>%
+  group_by(year, region) %>%
+  summarize(avg_median_income = mean(median_income), .groups = "drop")
+
+# Plotting the data
+incomeLineChart <- average_income_per_year %>% 
+  ggplot(aes(x = year, 
+             y = avg_median_income, 
+             color = region, 
+             group = region)) +
+  geom_line(linewidth = 1) +
+  labs(title = "Average Median Income by Region",
+       x = "Year",
+       y = "Average Median Income",
+       caption = "Data source: census_data_state_2008-2021.csv") +
+  scale_color_colorblind() +
+  theme_classic() +
+  theme(legend.position = "bottom") + 
+  scale_y_continuous(labels = scales::dollar_format(prefix = "$")) + # Formatting to show currency in the y-axis
+  guides(color = guide_legend(title = "Region"))
+
+# Displaying the graph
+incomeLineChart
+```
+
+This shows that growth and decline rates of average median income among each region over the years has stayed consistent with no overlap between any region.
+
+### Average Median Monthly Housing Costs by Region
+
+This plot displays the average median monthly housing costs by region in the US between the years 2008 and 2021.
+
+```{r}
+# Calculate average median home and rental costs per year and region
+avg_costs_by_region <- census_data %>%
+  pivot_longer(cols = c(median_monthly_home_cost, median_monthly_rent_cost), 
+               names_to = "cost_type", 
+               values_to = "value") %>%
+  group_by(year, region) %>%
+  summarize(avg_value = mean(value), .groups = "drop")
+
+# Plotting the data
+livingCostsLineChart <- avg_costs_by_region %>%
+  ggplot(aes(x = year, 
+             y = avg_value, 
+             color = region, 
+             group = region)) +
+  geom_line(linewidth = 1) +
+  labs(title = "Average Median Monthly Housing Costs by Region",
+       x = "Year",
+       y = "Average Median Monthly Cost",
+       caption = "Data source: census_data_state_2008-2021.csv") +
+  scale_color_colorblind() + 
+  theme_classic() + 
+  theme(legend.position = "bottom") + 
+  scale_y_continuous(labels = scales::dollar_format(prefix = "$")) + # Formatting to show currency in the y-axis
+  guides(color = guide_legend(title = "Region"))
+
+# Displaying the graph
+livingCostsLineChart
+```
+
+This shows that growth and decline rates of average median monthly housing costs among each region over the years has stayed consistent with no overlap between any region.
+
+It is worth noting that the Midwest average median income was consistently higher than that of the south, whereas when it comes to housing costs, it's the opposite.
+
+### Median Income vs. Percentage of Degree Holders by Region, Sized by Population
+
+This graph compares the average median income to the percentage of degree holders, organized by region, and the points are sized by the state populations.
+
+```{r}
+# Creating the incomeDegree variable
+incomeDegree <- census_data %>%
+  ggplot(aes(
+    x = combined_degree_holders,
+    y = median_income,
+    color = region, # Coloring by region
+    size = population # Setting the size to population size
+  )) +
+  geom_point(alpha = 0.2) +
+  scale_color_colorblind() +
+  labs(
+    title = "Median Income vs. Percentage of Degree Holders by Region",
+    x = "Combined Degree Holders (%)",
+    y = "Median Income",
+    caption = "Data source: census_data_state_2008-2021.csv", 
+    color = NULL
+  ) +
+  facet_grid(. ~ region) + # Creating the four individual graphs based on region
+  theme(legend.position = "bottom") +  
+  geom_smooth(method = "lm", se = FALSE, size = 1) + 
+  guides(
+    size = guide_legend(title = "Population Size (Millions of People)"), 
+    color = FALSE
+  ) + 
+  scale_y_continuous(labels = scales::dollar_format(prefix = "$")) + 
+  scale_size_continuous(labels = scales::comma_format(scale = 1e-6, suffix = "M")) # Changing the legend to show the number in millions of people rather than in scientific notation
+
+# Displaying the graph
+incomeDegree
+```
+
+This table shows that the south had the greatest growth in percentage of people that obtained degrees, which increased the median income most of any other region. The other three regions had consistent growth with one another.
+
+### Comparing Percent Poverty, Monthly Housing Costs, and Median Income Over the Years
+
+This plot shows a grouped bar chart displaying the year over year percent change in percent poverty, monthly housing expenses, and median income between the years 2008 and 2021.
+
+```{r, warning = FALSE}
+# Calculating average values per year
+avg_data <- census_data %>%
+  group_by(year) %>%
+  summarize(
+    avg_percent_poverty = mean(prop_poverty),
+    avg_monthly_housing_costs = mean((median_monthly_home_cost + median_monthly_rent_cost) / 2),
+    avg_median_income = mean(median_income)
+  )
+
+# Calculating percentage changes
+avg_data_percent_change <- avg_data %>% # Used chatGPT to help with this
+  mutate(
+    median_income_change = (avg_median_income / lag(avg_median_income) - 1) * 100,
+    housing_costs_change = ((avg_monthly_housing_costs + lag(avg_monthly_housing_costs)) / (2 * lag(avg_monthly_housing_costs)) - 1) * 100,
+    percent_poverty_change = (avg_percent_poverty / lag(avg_percent_poverty) - 1) * 100
+  )
+
+# Reshaping data for plotting
+avg_data_change_long <- avg_data_percent_change %>% 
+  pivot_longer(cols = c(median_income_change, housing_costs_change, percent_poverty_change),
+               names_to = "variable",
+               values_to = "percent_change")
+
+# Plotting the percent change
+percentChange <- avg_data_change_long %>%
+  ggplot(aes(x = year, y = percent_change, fill = variable)) +
+  geom_col(position = "dodge", width = 0.7, color = "white") +
+  labs(title = "Percentage Change in Median Income, Housing Costs, and Poverty Over the Years",
+       x = "Year",
+       y = "Percentage Change",
+       fill = "Variable",
+       caption = "Data source: census_data_state_2008-2021.csv") +
+  scale_fill_manual(values = c("skyblue", "orange", "lightgreen")) + # Changing the color of each bar
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+percentChange
+```
+
+Housing cost changes closely mimic median income changes. Percent poverty mirrored housing cost changes and median income changes. This makes sense that as median income increases, poverty rates decrease.It should also be noted that the year 2020 is missing from the plot. This is likely due to the COVID-19 pandemic.
+
+# Monte Carlo Methods of Inference
+
+For this Monte Carlo Simulation, I will be testing whether or not there has been a statistically significant difference in average monthly home costs between male and female dominated states.
+
+```{r}
+# Used chatGPT to help with some sections and to format the code
+# Extracting variables to use
+sim_data <- census_data %>% select(year, prop_male, prop_female, median_monthly_home_cost)
+
+# Specify your observed test statistic
+observed_statistic <- mean(sim_data$median_monthly_home_cost[sim_data$prop_male > sim_data$prop_female]) -
+                      mean(sim_data$median_monthly_home_cost[sim_data$prop_male < sim_data$prop_female])
+
+# Number of simulations
+num_simulations <- 10000
+
+# Initialize an empty vector to store simulated test statistics
+simulated_stats <- numeric(num_simulations)
+
+# Run the Monte Carlo simulation
+for (i in 1:num_simulations) {
+# Shuffle the data between the two groups based on proportion of males
+  shuffled_data <- sim_data %>%
+    mutate(shuffled_group = ifelse(runif(n()) < 0.5, "A", "B"))
+
+# Calculate the test statistic on the shuffled data
+  shuffled_statistic <- mean(shuffled_data$median_monthly_home_cost[shuffled_data$shuffled_group == "A"]) -
+                        mean(shuffled_data$median_monthly_home_cost[shuffled_data$shuffled_group == "B"])
+
+# Stores the simulated test statistic
+  simulated_stats[i] <- shuffled_statistic
+}
+
+# Plot the null distribution
+null_dist_plot <- ggplot() +
+  geom_density(aes(x = simulated_stats), fill = "skyblue", alpha = 0.6) +
+  geom_vline(xintercept = observed_statistic, color = "red", linetype = "dashed", size = 1) +
+  geom_vline(xintercept = quantile(simulated_stats, 0.975), linetype = "dotted", size = 1, color = "blue") +
+  geom_vline(xintercept = quantile(simulated_stats, 0.025), linetype = "dotted", size = 1, color = "blue") +
+  labs(title = "Monte Carlo Simulation of Home Costs Test",
+       x = "Difference in Average Home Costs (Proportion of Males > Females)",
+       y = "Density") +
+  theme_minimal()
+
+# Displaying the plot
+print(null_dist_plot)
+
+# Calculating the p-value
+p_value <- mean(simulated_stats >= observed_statistic) + mean(simulated_stats <= -observed_statistic)
+
+# Displaying the p-value
+cat("Observed Test Statistic:", observed_statistic, "\n")
+cat("p-value:", sprintf("%.4f", p_value), "\n") # Rounding to 4 decimal places
+
+# Interpretation
+if (p_value < 0.05) {
+  cat("At the 95% significance level, there is statistically significant evidence that there is a difference in average home costs between states with higher proportions of males is statistically significant.\n")
+} else {
+  cat("At the 95% significance level, there is not statistically significant evidence that there is a difference in average home costs between states with higher proportions of males.\n")
+}
+```
+
+# Bootstrap Methods of Inference
+
+Bootstrapping is used to test for the confidence interval of median monthly home costs.
+
+```{r}
+# Used chatGPT to help with some sections and to format the code
+# Extracting variables to use
+bootstrap_data <- census_data %>% select(median_monthly_home_cost)
+
+# Function to calculate the median
+calculate_median <- function(data) {
+  return(median(data))
+}
+
+# Number of bootstrap samples
+num_bootstrap_samples <- 1000
+
+# Initializing variable to store bootstrapped samples
+bootstrap_medians <- numeric(num_bootstrap_samples)
+
+# Running the bootstrap procedure
+for (i in 1:num_bootstrap_samples) {
+# Sampling with replacement
+  bootstrap_sample <- sample(bootstrap_data$median_monthly_home_cost, replace = TRUE)
+  
+# Calculating the median for the bootstrap sample
+  bootstrap_medians[i] <- calculate_median(bootstrap_sample)
+}
+
+# Calculating the 95% bootstrap confidence interval
+ci_lower <- quantile(bootstrap_medians, 0.025) %>% round(., 2) # Rounding upper and lower to two decimal places to reflect currency
+ci_upper <- quantile(bootstrap_medians, 0.975) %>% round(., 2)
+
+# Displaying the bootstrap distribution
+bootstrap_dist_plot <- ggplot() +
+  geom_density(aes(x = bootstrap_medians), fill = "skyblue", alpha = 0.6) +
+  geom_vline(xintercept = ci_lower, linetype = "dotted", size = 1, color = "blue") +
+  geom_vline(xintercept = ci_upper, linetype = "dotted", size = 1, color = "blue") +
+  labs(title = "Bootstrap Distribution of Median Home Costs",
+       x = "Median Home Costs",
+       y = "Density") +
+  theme_minimal() + 
+    scale_x_continuous(labels = scales::dollar_format(prefix = "$")) # Formatting to show currency in the x-axis
+
+# Displaying the plot
+print(bootstrap_dist_plot)
+
+# Interpretation
+cat("95% Bootstrap Confidence Interval for Median Home Costs:", 
+    sprintf("[%.2f, %.2f]\n", ci_lower, ci_upper))
+```
+
+Concluding from the bootstrapping inference, the true median home costs is between $`r ci_lower` and $`r ci_upper`.
+
+# Conclusion
+
+This analysis has shown some of the recent trends between the years 2008 and 2021 regarding income, demographics, education, and housing costs. The overall trends suggests that the cost of living, especially when renting, is on the rise, as well as education levels. It seems that in the near future, the number of degree holders will outweigh the number of non-degree holders. This as well has caused the median income to rise steadily with the growing education rates.The southern states, in particular, had the greatest growth in both education levels and median income. The median income in the southern states has nearly tripled between the years 2008 and 2021.The steady rise in median income has caused the percentage of people to steadily decrease as well. However, in 2021 there was a sharp rise in the percent change of people in poverty as well as the change in housing costs. This likely could have been due to the COVID-19 pandemic. At the beginning of this project, I was very concerned about the rising cost of living and housing, but after thoroughly analyzing the national data, the trajectory of costs and income are not as bad as I originally perceived them to be.
